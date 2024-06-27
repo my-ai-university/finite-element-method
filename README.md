@@ -8,7 +8,7 @@
     - **Fine-Tuning**: Fine-tune an open-source pre-trained model on the collected FEM-specific dataset to specialize it for FEM-related tasks.
 
 2. **Utilizing Retrieval-Augmented Generation (RAG) for Contextual Information**
-    - **Course Material Integration**: Index FEM course materials (available on YouTube) and integrate them into the RAG system to provide context and references for the model.
+    - **Course Material Integration**: Index FEM course materials (available on [YouTube](https://youtube.com/playlist?list=PLJhG_d-Sp_JHKVRhfTgDqbic_4MHpltXZ)) and integrate them into the RAG system to provide context and references for the model.
     - **Contextual Query Handling**: Develop and test the model's ability to retrieve relevant information from the indexed course materials to enhance its responses.
     - **Developing an AI TA App for FEM Course**: Create an AI teaching assistant application specifically for the FEM course to assist students with questions and provide relevant references.
 
