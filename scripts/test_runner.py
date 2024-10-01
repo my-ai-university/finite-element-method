@@ -13,9 +13,13 @@ def main():
     study_id = str(os.environ['STUDY_ID'])
     q = int(df['qlora_rank'].loc[task_id])
     n_b = int(df['batch_size'].loc[task_id])
+    num_epochs = int(df['num_epochs'].loc[task_id])
+    k_folds = int(df['k_folds'].loc[task_id])
     save_path = "/project/garikipa_1359/projects/ai_ta/hyperparam_opt/"
     save_name = f"{task_id}_{study_id}"
-    out_dict = LoRA_finetuned_llm.main(save_path = save_path,
+    out_dict = LoRA_finetuned_llm.main(num_epochs = num_epochs,
+                                       k_folds = k_folds,
+                                       save_path = save_path,
                                        save_name = save_name,
                                        batch_size = n_b,
                                        qlora_rank = q)

@@ -1,2 +1,2 @@
-task_id,qlora_rank,batch_size,lora_dropout
-1,32,4,0.05
+task_id,num_epochs,k_folds,qlora_rank,batch_size,lora_dropout
+1,2,2,32,4,0.05

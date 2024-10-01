@@ -43,6 +43,71 @@ def tokenize_function(examples,
         return encoding
 
 
+def get_model_kwargs(use_8bit, use_4bit):
+    model_kwargs = {"device_map":"auto"}
+
+    if use_8bit == True:
+        bnb_config = BitsAndBytesConfig(
+            load_in_8bit=True,
+        )
+        model_kwargs["quantization_config"] = bnb_config
+    elif use_4bit == True:
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.bfloat16,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_quant_storage=torch.bfloat16,
+            bnb_4bit_use_double_quant=True, #Saves additional memory
+            )
+        model_kwargs["quantization_config"] = bnb_config
+    else:
+        model_kwargs["torch_dtype"] = torch.bfloat16
+
+    return model_kwargs
+
+
+def get_model(modelname,
+              model_kwargs,
+              load_saved_model,
+              lora_dropout,
+              qlora_rank,
+              saved_model_path
+              ):
+    # comment these 4x lines out if using accelerate
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(device)
+    print("Max memory allocated=",bytes_to_giga_bytes(torch.cuda.max_memory_allocated()))
+    print("Initial memory allocated=",bytes_to_giga_bytes(torch.cuda.memory_allocated()))
+
+    if not load_saved_model:
+        model = AutoModelForCausalLM.from_pretrained(modelname, **model_kwargs)
+        lora_config = LoraConfig(bias="none", 
+                                 # init_lora_weights=False,  # not recommended
+                                 use_rslora=True, 
+                                 lora_alpha=16, 
+                                 lora_dropout=lora_dropout,
+                                 peft_type="LORA",
+                                 r=qlora_rank,
+                                 target_modules=["q_proj", "v_proj"],
+                                 task_type="CAUSAL_LM",
+                                 )
+        model = get_peft_model(model, lora_config)
+        print("Model loaded")
+        print("Final memory allocated=",bytes_to_giga_bytes(torch.cuda.max_memory_allocated()))
+
+
+    if load_saved_model:
+        # TBD: need to check
+        base_model = AutoModelForCausalLM.from_pretrained(modelname, **model_kwargs)
+        peft_model_id = saved_model_path
+        model = PeftModel.from_pretrained(base_model, peft_model_id)
+        model.merge_adapter()
+        print("Successfully loaded the model into memory")
+        print("Final memory allocated=",bytes_to_giga_bytes(torch.cuda.max_memory_allocated()))
+
+    return model, device
+
+
 def prep_dataloader(dataset,
                     tokenizer,
                     batch_size,
@@ -116,7 +181,7 @@ def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
          batch_size = 4,
          lora_dropout=0.05,
          k_folds = 5,
-         debug_mode = False,
+         run_one_fold = False,
          ):
     
     out_dict = {"batch_size":batch_size,
@@ -129,84 +194,37 @@ def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
     full_path_to_save_model = create_savemodel_dir(save_path, save_name)
     set_seed(2)
 
-    # comment these lines out if using accelerate
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(device)
-    print("Initial memory allocated=",bytes_to_giga_bytes(torch.cuda.max_memory_allocated()))
-
-    model_kwargs = {"device_map":"auto"}
-
-    if use_8bit == True:
-        bnb_config = BitsAndBytesConfig(
-            load_in_8bit=True,
-        )
-        model_kwargs["bnb_config"] = bnb_config
-    elif use_4bit == True:
-        bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_compute_dtype=torch.bfloat16,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_quant_storage=torch.bfloat16,
-            bnb_4bit_use_double_quant=True, #Saves additional memory
-            )
-        model_kwargs["bnb_config"] = bnb_config
-    else:
-        model_kwargs["torch_dtype"] = torch.bfloat16
-
+    model_kwargs = get_model_kwargs(use_8bit, use_4bit)  
     tokenizer = AutoTokenizer.from_pretrained(modelname, 
                                               padding_side="left", 
                                               return_tensors="pt",
                                               )
-
-    if not load_saved_model:
-        model = AutoModelForCausalLM.from_pretrained(modelname, **model_kwargs)
-        lora_config = LoraConfig(bias="none", 
-                                 # init_lora_weights=False,  # not recommended
-                                 use_rslora=True, 
-                                 lora_alpha=16, 
-                                 lora_dropout=lora_dropout,
-                                 peft_type="LORA",
-                                 r=qlora_rank,
-                                 target_modules=["q_proj", "v_proj"],
-                                 task_type="CAUSAL_LM",
-                                 )
-        model = get_peft_model(model, lora_config)
-        print("Model loaded")
-        print("Final memory allocated=",bytes_to_giga_bytes(torch.cuda.max_memory_allocated()))
-
-
-    if load_saved_model:
-        # TBD: need to check
-        base_model = AutoModelForCausalLM.from_pretrained(modelname, **model_kwargs)
-        peft_model_id = saved_model_path
-        model = PeftModel.from_pretrained(base_model, peft_model_id)
-        model.merge_adapter()
-        print("Successfully loaded the model into memory")
-        print("Final memory allocated=",bytes_to_giga_bytes(torch.cuda.max_memory_allocated()))
-
-
-    model.print_trainable_parameters()
     tokenizer.pad_token = tokenizer.eos_token
-    state_dict_filename = f"{full_path_to_save_model}/init_state_dict.pth"
-    torch.save(model.state_dict(),state_dict_filename)
         
     data_df = pd.read_csv(data_file, dtype={'Questions': 'string', 'Answers': 'string'})
     data_df['text'] = "Question: " + data_df['Questions'] + " Answer: " + data_df['Answers'].astype("string")
     data_df = data_df[['text']]
     print(f"dataframe loaded, shape = {data_df.shape}, head = {data_df.head()}")
-
     dataset = Dataset.from_pandas(data_df)
 
     kfold = KFold(n_splits=k_folds, shuffle=True)
     test_loss_list = []
     for fold, (train_idx, test_idx) in enumerate(kfold.split(dataset)):
-        if fold>0:
-            model.load_state_dict(torch.load(state_dict_filename, weights_only=True))
-
-        if debug_mode == True:
+        if run_one_fold == True:
             if fold>0:
                 break
+        print("============================")
         print(f"Fold {fold+1}")
+
+        model, device = get_model(modelname, 
+                                  model_kwargs, 
+                                  load_saved_model, 
+                                  lora_dropout, 
+                                  qlora_rank, 
+                                  saved_model_path
+                                  )
+        model.print_trainable_parameters()
+
         train_dataloader = prep_dataloader(dataset, tokenizer, batch_size, train_idx)
         test_dataloader = prep_dataloader(dataset, tokenizer, batch_size, test_idx)
 
@@ -233,16 +251,15 @@ def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
         #                                                          )
 
         print("Prior training memory allocated=",bytes_to_giga_bytes(torch.cuda.max_memory_allocated()))
-
         start_time = time.time()
         model.to(device) # comment out for accelerator
-
         fold_loss_list = []
         for epoch in range(num_epochs):
+            print("--------------")
             print(f"Epoch: {epoch+1}")
             train(model, device, train_dataloader, optimizer, scheduler)
             epoch_loss = test(model, device, test_dataloader)
-            print(f"Avg. epoch test loss: {epoch_loss}")
+            print(f"Epoch {epoch+1} avg. test loss: {epoch_loss}")
             fold_loss_list.append(epoch_loss)
             if (epoch % 100) == 0:
                 output_dir=f"{full_path_to_save_model}/epoch{epoch}/"
@@ -256,13 +273,18 @@ def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
         # Save the model
         model.save_pretrained(f"{full_path_to_save_model}/final_model_fold_{fold+1}/")
 
-    out_dict["avg_epoch_test_losses"] = test_loss_list
+        if ((fold+1) < k_folds) and (run_one_fold==False):
+            del (model,train_dataloader,test_dataloader,optimizer,scheduler)
+            torch.cuda.empty_cache()
+            torch.cuda.reset_peak_memory_stats()
 
+    out_dict["avg_epoch_test_losses"] = test_loss_list
     out_dict["combined_avg_test_loss"] = float(np.mean(test_loss_list,axis=0)[-1])
    
+    # this is just evaluating for the final fold. need to move up and change if we want to save all
     model.eval()
+    print("=====================")
     print("Answering your questions....")
-
     questions = [
         "Question: What is Finite Element Method? Answer:",
         "Question: Tell me about the assembly process in Finite Element Method Answer:",
@@ -286,6 +308,6 @@ if __name__ == "__main__":
                     use_8bit=False,
                     batch_size=32,
                     k_folds=5,
-                    debug_mode = True,
-                    num_epochs = 1)
+                    run_one_fold = True,
+                    num_epochs = 3)
     print(out_dict)
