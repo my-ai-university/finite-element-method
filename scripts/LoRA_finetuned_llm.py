@@ -48,16 +48,13 @@ def prep_dataloader(dataset,
                     batch_size,
                     idx,
                     ):
-    #if use_refined_transcript:
-    #    tokenized_datasets = dataset.map(tokenize_function(tokenizer=tokenizer), batched=True, remove_columns=["id", "text"])
-        #tokenized_datasets = dataset.map(tokenize_function, batched=True)
-    #if use_QA_transcript:
+    
     tokenized_datasets = dataset.map(tokenize_function, 
                                      batched=True, 
                                      fn_kwargs={"tokenizer":tokenizer},
                                      remove_columns=["text"])
 
-    # print("Tokenized training dataset=\n",tokenized_datasets,"[0]=",tokenized_datasets[0])
+    # print("Tokenized dataset example=\n",tokenized_datasets,"[0]=",tokenized_datasets[0])
 
     data_collator = DataCollatorForLanguageModeling(tokenizer, mlm=False)
     train_dataloader = DataLoader(tokenized_datasets, 
@@ -65,7 +62,6 @@ def prep_dataloader(dataset,
                                   collate_fn=data_collator,
                                   sampler=torch.utils.data.SubsetRandomSampler(idx),
                                   )
-    
     return train_dataloader
 
 
@@ -78,7 +74,6 @@ def train(model, device, train_dataloader, optimizer, scheduler):
         #print("Batch Shape=", {k: v.shape for k, v in batch.items()})
         optimizer.zero_grad()
         outputs = model(**batch)
-        #print("Output=", outputs)
         loss = outputs.loss
         loss.backward() # comment out for accelerator
         # accelerator.backward(loss)
@@ -101,7 +96,6 @@ def test(model, device, test_dataloader):
             batch = {k: v.to(device) for k, v in batch.items() if k != "overflow_to_sample_mapping"} # comment out for accelerator
             outputs = model(**batch)
             loss = outputs.loss
-            #print("loss=", loss)
             running_loss += loss.item()   
             progress_bar.update(1)   
     epoch_loss = running_loss/batch_num
@@ -112,8 +106,6 @@ def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
          use_8bit = True,
          use_4bit = False,
          data_file = "../data/FEM_QA_Combined.csv",
-         # use_refined_transcript = True,
-         # use_QA_transcript = False,
          do_inference = False,
          load_saved_model = False,
          saved_model_path = "",
@@ -184,7 +176,7 @@ def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
 
 
     if load_saved_model:
-        # need to check
+        # TBD: need to check
         base_model = AutoModelForCausalLM.from_pretrained(modelname, **model_kwargs)
         peft_model_id = saved_model_path
         model = PeftModel.from_pretrained(base_model, peft_model_id)
@@ -195,25 +187,22 @@ def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
 
     model.print_trainable_parameters()
     tokenizer.pad_token = tokenizer.eos_token
-
-    # if use_refined_transcript:
-    #     data_df = pd.read_csv("../data/FEM_Garikipati_Transcripts_aggregated.csv", dtype={'text': 'string'})
-    #     data_df = data_df.set_axis(['id', 'text'], axis=1)
-    #     #index_list = list(range(20, 164))
-    #     #data_df.drop(data_df.index[index_list], inplace=True)
+    state_dict_filename = f"{full_path_to_save_model}/init_state_dict.pth"
+    torch.save(model.state_dict(),state_dict_filename)
         
-    #if use_QA_transcript:
     data_df = pd.read_csv(data_file, dtype={'Questions': 'string', 'Answers': 'string'})
     data_df['text'] = "Question: " + data_df['Questions'] + " Answer: " + data_df['Answers'].astype("string")
     data_df = data_df[['text']]
-    #index_list = list(range(50, 8203))
-    #data_df.drop(data_df.index[index_list], inplace=True)
+    print(f"dataframe loaded, shape = {data_df.shape}, head = {data_df.head()}")
 
     dataset = Dataset.from_pandas(data_df)
 
     kfold = KFold(n_splits=k_folds, shuffle=True)
     test_loss_list = []
     for fold, (train_idx, test_idx) in enumerate(kfold.split(dataset)):
+        if fold>0:
+            model.load_state_dict(torch.load(state_dict_filename, weights_only=True))
+
         if debug_mode == True:
             if fold>0:
                 break
@@ -243,13 +232,10 @@ def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
         #                                                          scheduler,
         #                                                          )
 
-        #progress_bar = tqdm(range(num_training_steps))
-
         print("Prior training memory allocated=",bytes_to_giga_bytes(torch.cuda.max_memory_allocated()))
 
         start_time = time.time()
         model.to(device) # comment out for accelerator
-        #model.train() # now in train()
 
         fold_loss_list = []
         for epoch in range(num_epochs):
@@ -264,7 +250,6 @@ def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
         
         end_time = time.time()
         test_loss_list.append(fold_loss_list)
-    
         print(f"Training Completed in {end_time - start_time:.2f} seconds")
         print("Post training memory allocated=",bytes_to_giga_bytes(torch.cuda.max_memory_allocated()))
 
@@ -273,7 +258,7 @@ def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
 
     out_dict["avg_epoch_test_losses"] = test_loss_list
 
-    out_dict["combined_avg_test_loss"] = float(np.mean(test_loss_list))
+    out_dict["combined_avg_test_loss"] = float(np.mean(test_loss_list,axis=0)[-1])
    
     model.eval()
     print("Answering your questions....")
@@ -301,5 +286,6 @@ if __name__ == "__main__":
                     use_8bit=False,
                     batch_size=32,
                     k_folds=5,
-                    debug_mode = True)
+                    debug_mode = True,
+                    num_epochs = 1)
     print(out_dict)
