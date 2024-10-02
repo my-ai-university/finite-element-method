@@ -15,6 +15,8 @@ def main():
     n_b = int(df['batch_size'].loc[task_id])
     num_epochs = int(df['num_epochs'].loc[task_id])
     k_folds = int(df['k_folds'].loc[task_id])
+    run_one_fold = bool(df['run_one_fold'].loc[task_id])
+
     save_path = "/project/garikipa_1359/projects/ai_ta/hyperparam_opt/"
     save_name = f"{task_id}_{study_id}"
     out_dict = LoRA_finetuned_llm.main(num_epochs = num_epochs,
@@ -22,7 +24,9 @@ def main():
                                        save_path = save_path,
                                        save_name = save_name,
                                        batch_size = n_b,
-                                       qlora_rank = q)
+                                       qlora_rank = q,
+                                       run_one_fold = run_one_fold,
+                                       )
     out_dict["study_id"] = study_id
     out_dict["task_id"] = task_id
 

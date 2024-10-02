@@ -16,6 +16,30 @@ import numpy as np
 # from accelerate import Accelerator
 from sklearn.model_selection import KFold
 
+
+class EarlyStopping:
+    # ref:
+    # https://www.geeksforgeeks.org/how-to-handle-overfitting-in-pytorch-models-using-early-stopping/
+    def __init__(self, patience=5, delta=0):
+        self.patience = patience
+        self.delta = delta
+        self.best_score = None
+        self.early_stop = False
+        self.counter = 0
+        self.best_model_state = None
+
+    def __call__(self, score):
+        if self.best_score is None:
+            self.best_score = score
+        elif score > self.best_score + self.delta: # this was < (presumably b/c neg?) 
+            self.counter += 1
+            if self.counter >= self.patience:
+                self.early_stop = True
+        else:
+            self.best_score = score
+            self.counter = 0
+
+
 def bytes_to_giga_bytes(bytes):
     return bytes / 1024 / 1024 / 1024
 
@@ -134,19 +158,23 @@ def train(model, device, train_dataloader, optimizer, scheduler):
     model.train()
     print("Training")
     progress_bar = tqdm(range(len(train_dataloader)))
+    running_loss = 0 
+    batch_num = 0
     for batch in train_dataloader:
+        batch_num += 1
         batch = {k: v.to(device) for k, v in batch.items() if k != "overflow_to_sample_mapping"} # comment out for accelerator
         #print("Batch Shape=", {k: v.shape for k, v in batch.items()})
         optimizer.zero_grad()
         outputs = model(**batch)
         loss = outputs.loss
+        running_loss += loss.item() 
         loss.backward() # comment out for accelerator
         # accelerator.backward(loss)
         optimizer.step()
         scheduler.step()
         progress_bar.update(1)
-
-    return
+    train_loss = running_loss/batch_num
+    return train_loss
 
 
 def test(model, device, test_dataloader):
@@ -208,6 +236,7 @@ def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
     dataset = Dataset.from_pandas(data_df)
 
     kfold = KFold(n_splits=k_folds, shuffle=True)
+    train_loss_list = []
     test_loss_list = []
     for fold, (train_idx, test_idx) in enumerate(kfold.split(dataset)):
         if run_one_fold == True:
@@ -253,20 +282,28 @@ def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
         print("Prior training memory allocated=",bytes_to_giga_bytes(torch.cuda.max_memory_allocated()))
         start_time = time.time()
         model.to(device) # comment out for accelerator
-        fold_loss_list = []
+        fold_train_loss_list = []
+        fold_test_loss_list = []
+        # early_stopping = EarlyStopping(patience=5, delta=0.01) # don't use w/ k-fold CV
         for epoch in range(num_epochs):
             print("--------------")
             print(f"Epoch: {epoch+1}")
-            train(model, device, train_dataloader, optimizer, scheduler)
-            epoch_loss = test(model, device, test_dataloader)
-            print(f"Epoch {epoch+1} avg. test loss: {epoch_loss}")
-            fold_loss_list.append(epoch_loss)
+            epoch_train_loss = train(model, device, train_dataloader, optimizer, scheduler)
+            epoch_test_loss = test(model, device, test_dataloader)
+            print(f"Epoch {epoch+1} avg. test loss: {epoch_test_loss}")
+            fold_train_loss_list.append(epoch_train_loss)
+            fold_test_loss_list.append(epoch_test_loss)
             if (epoch % 100) == 0:
                 output_dir=f"{full_path_to_save_model}/epoch{epoch}/"
                 model.save_pretrained(output_dir)
-        
+            # early_stopping(epoch_test_loss)
+            # if early_stopping.early_stop:
+            #     print("Early stopping")
+            #     break
+                
         end_time = time.time()
-        test_loss_list.append(fold_loss_list)
+        train_loss_list.append(fold_train_loss_list)
+        test_loss_list.append(fold_test_loss_list)
         print(f"Training Completed in {end_time - start_time:.2f} seconds")
         print("Post training memory allocated=",bytes_to_giga_bytes(torch.cuda.max_memory_allocated()))
 
@@ -278,6 +315,7 @@ def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
             torch.cuda.empty_cache()
             torch.cuda.reset_peak_memory_stats()
 
+    out_dict["avg_epoch_train_losses"] = train_loss_list
     out_dict["avg_epoch_test_losses"] = test_loss_list
     out_dict["combined_avg_test_loss"] = float(np.mean(test_loss_list,axis=0)[-1])
    

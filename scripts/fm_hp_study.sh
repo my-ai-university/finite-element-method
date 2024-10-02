@@ -8,8 +8,8 @@
 #SBATCH --cpus-per-task=16          ## was 32
 #SBATCH --gpus-per-task=1
 #SBATCH --constraint=[a100-40gb|a100-80gb|epyc-7282|epyc-7313]  ## a40 or a100
-#SBATCH --time=04:00:00             ## hh:mm:ss
-#SBATCH --array=1                   # specify <1-X>
+#SBATCH --time=05:00:00             ## hh:mm:ss
+#SBATCH --array=1-3                 # specify <1-X>
 #SBATCH --export=ALL
 #SBATCH --output=/project/garikipa_1359/projects/ai_ta/hyperparam_opt/slurm_out/%A_%a.out
 
@@ -18,7 +18,7 @@ module purge
 eval "$(conda shell.bash hook)"
 conda activate /project/garikipa_1359/envs/llm_env_12
 
-STUDY_ID="hp_opt_241002"
+STUDY_ID="hp_opt_241002b"
 export STUDY_ID
 
 echo "Study ID: $STUDY_ID"

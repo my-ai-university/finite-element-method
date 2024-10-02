@@ -1,2 +1,4 @@
-task_id,num_epochs,k_folds,qlora_rank,batch_size,lora_dropout
-1,2,2,32,4,0.05
+task_id,num_epochs,k_folds,qlora_rank,batch_size,lora_dropout,run_one_fold
+1,10,5,32,4,0.05,True
+2,10,5,64,4,0.05,True
+3,10,5,16,4,0.05,True
