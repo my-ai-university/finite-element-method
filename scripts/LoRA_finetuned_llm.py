@@ -195,6 +195,52 @@ def test(model, device, test_dataloader):
     return epoch_loss
 
 
+def answer_questions(questions,
+                     tokenizer,
+                     device,
+                     model):
+    encoded_inputs = tokenizer(questions, padding=True, return_tensors="pt").to(device)
+    decoded_input = tokenizer.batch_decode(encoded_inputs["input_ids"], skip_special_tokens=True)
+    generated_ids = model.generate(**encoded_inputs, max_new_tokens=100)
+    text_generation = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+    return text_generation
+
+def sample_responses(N_responses,
+                     train_dl,
+                     test_dl,
+                     tokenizer,
+                     model,
+                     device,
+                     ):
+
+    train_qa_orig = []
+    test_qa_orig = []
+    train_questions = []
+    test_questions = []
+    while len(train_questions) <= N_responses:
+        encoded_questions = next(iter(train_dl))
+        decoded_questions = tokenizer.batch_decode(encoded_questions["input_ids"], skip_special_tokens=True)
+        decoded_question = decoded_questions[0]
+        train_qa_orig.append(decoded_question)
+        decoded_question = decoded_question.split("Answer:")[0]
+        train_questions.append(f"{decoded_question} Answer: ")    
+    while len(test_questions) <= N_responses:
+        encoded_questions = next(iter(test_dl))
+        decoded_questions = tokenizer.batch_decode(encoded_questions["input_ids"], skip_special_tokens=True)
+        decoded_question = decoded_questions[0]
+        test_qa_orig.append(decoded_question)
+        decoded_question = decoded_question.split("Answer:")[0]
+        test_questions.append(f"{decoded_question} Answer: ")
+    
+    train_qa = answer_questions(train_questions, tokenizer, device, model)
+    test_qa = answer_questions(test_questions, tokenizer, device, model)
+    response_dict = {"train_qa":train_qa,
+                     "train_qa_orig":train_qa_orig,
+                     "test_qa":test_qa,
+                     "test_qa_orig":test_qa_orig}
+    return response_dict
+
+
 def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
          use_8bit = True,
          use_4bit = False,
@@ -310,6 +356,16 @@ def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
         # Save the model
         model.save_pretrained(f"{full_path_to_save_model}/final_model_fold_{fold+1}/")
 
+        # Save 5 random train/test responses
+        response_dict = sample_responses(5,
+                                         train_dataloader,
+                                         test_dataloader,
+                                         tokenizer,
+                                         model,
+                                         device)
+        
+        out_dict[f"fold {fold} q/a"] = response_dict
+
         if ((fold+1) < k_folds) and (run_one_fold==False):
             del (model,train_dataloader,test_dataloader,optimizer,scheduler)
             torch.cuda.empty_cache()
@@ -329,10 +385,7 @@ def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
         "Question: What is continuum phyics? Answer:",
         "Question: What is deal.II? Answer:"
     ]
-    encoded_inputs = tokenizer(questions, padding=True, return_tensors="pt").to(device)
-    decoded_input = tokenizer.batch_decode(encoded_inputs["input_ids"], skip_special_tokens=True)
-    generated_ids = model.generate(**encoded_inputs, max_new_tokens=100)
-    text_generation = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+    text_generation = answer_questions(questions, tokenizer, device, model)
     print("\n\n Questions answered:\n\n",text_generation,"\n\n")
 
     out_dict["text_gen"] = text_generation
@@ -343,9 +396,10 @@ def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
 if __name__ == "__main__":
     # load a small model for testing purposes
     out_dict = main("HuggingFaceTB/SmolLM-135M",
+                    num_epochs = 1,
                     use_8bit=False,
                     batch_size=32,
                     k_folds=5,
                     run_one_fold = True,
-                    num_epochs = 3)
+                    )
     print(out_dict)
