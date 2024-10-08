@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 import torch
 from tqdm.auto import tqdm
 import pandas as pd
-from peft import LoraConfig, get_peft_model, PeftModel
+from peft import LoraConfig, get_peft_model, PeftModel, PeftConfig
 import time, datetime, os
 import numpy as np
 # from accelerate import Accelerator
@@ -118,14 +118,14 @@ def get_model(modelname,
         model = get_peft_model(model, lora_config)
         print("Model loaded")
         print("Final memory allocated=",bytes_to_giga_bytes(torch.cuda.max_memory_allocated()))
-
-
-    if load_saved_model:
+    elif load_saved_model:
         # TBD: need to check
-        base_model = AutoModelForCausalLM.from_pretrained(modelname, **model_kwargs)
         peft_model_id = saved_model_path
-        model = PeftModel.from_pretrained(base_model, peft_model_id)
-        model.merge_adapter()
+        config = PeftConfig.from_pretrained(peft_model_id)
+        base_model = AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path, **model_kwargs)
+        model = PeftModel.from_pretrained(base_model, peft_model_id, is_trainable=True)
+        # model.merge_adapter() # can't use this if training LoRA weights again
+        # model.merge_and_unload() # use this for inferencing, not training
         print("Successfully loaded the model into memory")
         print("Final memory allocated=",bytes_to_giga_bytes(torch.cuda.max_memory_allocated()))
 
@@ -201,7 +201,7 @@ def answer_questions(questions,
                      model):
     encoded_inputs = tokenizer(questions, padding=True, return_tensors="pt").to(device)
     decoded_input = tokenizer.batch_decode(encoded_inputs["input_ids"], skip_special_tokens=True)
-    generated_ids = model.generate(**encoded_inputs, max_new_tokens=100)
+    generated_ids = model.generate(**encoded_inputs, max_new_tokens=200) # max response length
     text_generation = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
     return text_generation
 
@@ -212,7 +212,7 @@ def sample_responses(N_responses,
                      model,
                      device,
                      ):
-
+    model.eval()
     train_qa_orig = []
     test_qa_orig = []
     train_questions = []
@@ -394,12 +394,26 @@ def main(modelname = "meta-llama/Meta-Llama-3.1-8B",
 
 
 if __name__ == "__main__":
-    # load a small model for testing purposes
-    out_dict = main("HuggingFaceTB/SmolLM-135M",
-                    num_epochs = 1,
-                    use_8bit=False,
-                    batch_size=32,
-                    k_folds=5,
-                    run_one_fold = True,
-                    )
+    if True:
+        # load a small model for testing purposes
+        out_dict = main("HuggingFaceTB/SmolLM-135M",
+                        num_epochs = 1,
+                        use_8bit=False,
+                        batch_size=32,
+                        k_folds=5,
+                        run_one_fold = True,
+                        )
+    if False:
+        # test loading saved peft model
+        out_dict = main(num_epochs = 1,
+                        use_8bit=True,
+                        load_saved_model = True,
+                        save_path = "/project/garikipa_1359/projects/ai_ta/hyperparam_opt/",
+                        save_name = "testing",
+                        saved_model_path = "/project/garikipa_1359/projects/ai_ta/hyperparam_opt/archive/26047541_1/final_model_fold_1",
+                        batch_size=4,
+                        k_folds=5,
+                        run_one_fold = True,
+                        )
+        
     print(out_dict)
