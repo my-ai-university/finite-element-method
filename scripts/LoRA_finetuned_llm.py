@@ -119,7 +119,6 @@ def get_model(modelname,
         print("Model loaded")
         print("Final memory allocated=",bytes_to_giga_bytes(torch.cuda.max_memory_allocated()))
     elif load_saved_model:
-        # TBD: need to check
         peft_model_id = saved_model_path
         config = PeftConfig.from_pretrained(peft_model_id)
         base_model = AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path, **model_kwargs)

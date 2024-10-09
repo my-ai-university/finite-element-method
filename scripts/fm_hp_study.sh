@@ -14,11 +14,18 @@
 #SBATCH --output=/project/garikipa_1359/projects/ai_ta/hyperparam_opt/slurm_out/%A_%a.out
 
 module purge
+module load gcc/11.3.0
+module load cuda/11.8.0
 
 eval "$(conda shell.bash hook)"
 conda activate /project/garikipa_1359/envs/llm_env_12
+export HUGGINGFACE_HUB_CACHE="/scratch1/$USER/.cache/huggingface/hub"
+export HF_HOME="/scratch1/$USER/.cache/huggingface"
+export HG_DATASETS_CACHE="/scratch1/$USER/.cache/huggingface/datasets"
+export BNB_CUDA_VERSION=118
 
-STUDY_ID="hp_opt_241002b"
+export TIMESTAMP=date +"%y%m%d-%H%M%S"
+export STUDY_ID="hp_opt_$TIMESTAMP"
 export STUDY_ID
 
 echo "Study ID: $STUDY_ID"
