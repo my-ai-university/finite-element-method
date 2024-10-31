@@ -47,7 +47,7 @@ def gen_questions(client: OpenAI, text: str, k: int, model: str = "gpt-4o-mini")
     - In this field, estimate the percentage of the possible answer that is covered by the input text.
     - Use your judgment to assign a realistic percentage in integer form, considering the depth and specificity of the input text.
 
-    Generate up to {k} diverse questions with Coverage 30-100 percentage.
+    Generate as many questions as needed to cover the input text, up to {k} diverse questions, with Coverage 30-100 percentage.
     """
 
     completion = client.beta.chat.completions.parse(
@@ -65,7 +65,7 @@ def gen_questions(client: OpenAI, text: str, k: int, model: str = "gpt-4o-mini")
     )
     
     response = completion.choices[0].message.parsed
-    
+        
     try:
         parsed_content = json.loads(response.json())['all_questions']
         return parsed_content
@@ -88,6 +88,10 @@ def gen_questions_s(client: OpenAI, text: str, k: int, model: str = "gpt-4o-mini
     - Emphasize broad understanding rather than niche knowledge.
     - Questions can be of any length needed to fully express the concept being tested.
     - Complex questions involving multiple parts or mathematical derivations are encouraged.
+    - Each question should have all the information needed such that it makes sense without referencing the input text. 
+    - Any variables that are used in the question must be defined in the question.
+    - Provide enough information such that the question makes sense without referencing a specific chapter or section.
+    - Without referring to the proof in the question text, make the questions self sufficient such that they are standalone without the proof text.
 
     2. Coverage:
     - For each question, include a "coverage" field.
@@ -117,7 +121,7 @@ def gen_questions_s(client: OpenAI, text: str, k: int, model: str = "gpt-4o-mini
     [
     {{
         "question": "What are the shape functions and their role in accuracy of approximations?",
-        "Coverage": 95
+        "coverage": 95
     }},
     {{
         "question": "How are boundary conditions imposed? Explain elimination approach.",
@@ -125,7 +129,7 @@ def gen_questions_s(client: OpenAI, text: str, k: int, model: str = "gpt-4o-mini
     }}
     ]
 
-    Generate up to {k} diverse questions with Coverage 30-100 percentage.
+    Generate as many questions as needed to cover the input text, up to {k} diverse questions, with Coverage 30-100 percentage.
     """
 
     completion = client.beta.chat.completions.parse(
@@ -164,6 +168,7 @@ def gen_answer(client: OpenAI, question: str, context: str, model: str = "gpt-4o
 
     1. Answer Guidelines:
     - Use only information from the context
+    - Restrict your use of finite element method knowledge to what is provided in the context provided. Do not use additional background finite element method knowledge in generating the answer (you may use background knowledge from other areas). 
     - Show step-by-step work for calculations
     - For multiple valid interpretations, provide separate answers
 

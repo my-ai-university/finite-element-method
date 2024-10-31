@@ -116,6 +116,25 @@ def chunk_text_by_words(cleaned_text, tokens_per_chunk, token_overlap=0, char_pe
     return chunks
 
 
+def split_latex_text_by_section(text, 
+                                tokens_per_chunk = 512,
+                                token_overlap = 0,
+                                environment_sensitive = True):
+    if not text:
+        print('Error: The text is missing')
+    # section_key = r'(\\section\{.*?\})'
+    # subsection_key = r'(\\subsection\{.*?\})'
+    # combined = f'({section_key}|{subsection_key})'
+    # sections = re.split(combined, text)
+    sections = re.split(r'\\section\*?\{.*?\}', text)
+    chunks_list = []
+    for section in sections:
+        #list_of_chunks = chunk_text_by_words(section, max_tokens_per_chunk)
+        chunks = chunk_text_by_words_latex(section, tokens_per_chunk, token_overlap, environment_sensitive=environment_sensitive)
+        chunks_list.extend(chunks)
+    return chunks_list
+
+
 def get_overlap_words(current_chunk, token_overlap, char_per_token):
     """
     helper function for chunk_text_by_words
@@ -266,7 +285,11 @@ def get_overlap_words_latex(current_chunk, token_overlap, environment_sensitive=
     return overlap_words, total_tokens
 
 
-def process_latex_files(file_paths, tokens_per_chunk=200, token_overlap=20, environment_sensitive=True):
+def process_latex_files(file_paths,
+                        tokens_per_chunk=200,
+                        token_overlap=20,
+                        environment_sensitive=True,
+                        chunk_by_section=True):
 
     if isinstance(file_paths, str):
         file_paths = [file_paths]
@@ -287,7 +310,12 @@ def process_latex_files(file_paths, tokens_per_chunk=200, token_overlap=20, envi
 
         cum_text += cleaned_text + '\n'
 
-    # chunk the cleaned text by word count, handling environments if needed
-    chunks = chunk_text_by_words_latex(cum_text, tokens_per_chunk, token_overlap, environment_sensitive=environment_sensitive)
+
+    if chunk_by_section==True:
+        chunks = split_latex_text_by_section(cum_text, tokens_per_chunk, environment_sensitive=environment_sensitive)        
+    else:
+        # chunk the cleaned text by word count, handling environments if needed
+        chunks = chunk_text_by_words_latex(cum_text, tokens_per_chunk, token_overlap, environment_sensitive=environment_sensitive)
+
 
     return chunks
