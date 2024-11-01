@@ -58,7 +58,7 @@ def gen_questions(client: OpenAI, text: str, k: int, model: str = "gpt-4o-mini")
         ],
         response_format=QResponse,
         temperature=0.15,
-        max_tokens=512*k,
+        max_tokens=512*k,               # Adjust as needed. Remove it to maximize the output length. (?)
         top_p=1.0,
         frequency_penalty=0.0,
         presence_penalty=0.0
@@ -76,6 +76,85 @@ def gen_questions(client: OpenAI, text: str, k: int, model: str = "gpt-4o-mini")
         return None
 
     
+
+def gen_questions_s(client: OpenAI, text: str, k: int, model: str = "gpt-4o-mini") -> QResponse:
+    system_prompt = f"""
+    You are an AI assistant specialized in creating educational content for Finite Element Method (FEM).
+    Generate comprehensive set of questions on topics related to FEM from the input text. **Only questions, no answer is needed.** Follow these guidelines:
+
+    1. Questions:
+    - Focus on fundamental concepts, theories, and general applications of FEM.
+    - Ensure that the questions are relevant to the input text, and can be at least partially answered using the provided text.
+    - Emphasize broad understanding rather than niche knowledge.
+    - Questions can be of any length needed to fully express the concept being tested.
+    - Complex questions involving multiple parts or mathematical derivations are encouraged.
+
+    2. Coverage:
+    - For each question, include a "coverage" field.
+    - In this field, estimate the percentage of the possible answer that is covered by the input text.
+    - Use your judgment to assign a realistic percentage in integer form, considering the depth and specificity of the input text.
+
+    Note: Mathematical Notation:
+    - Use LaTeX formatting for mathematical expressions
+    - For inline equations, use single $ wrapper (e.g., "Calculate the strain energy $U = \\frac{1}{2}\\int_V \\sigma\\epsilon dV$")
+    - For display equations, use double $$ wrapper, e.g.:
+        "Derive the stiffness matrix given the following stress-strain relationship:
+        $$
+        \\begin{{bmatrix}}
+        \\sigma_{{xx}} \\\\ \\sigma_{{yy}} \\\\ \\tau_{{xy}}
+        \\end{{bmatrix}} =
+        \\begin{{bmatrix}}
+        D_{{11}} & D_{{12}} & 0 \\\\
+        D_{{21}} & D_{{22}} & 0 \\\\
+        0 & 0 & D_{{33}}
+        \\end{{bmatrix}}
+        \\begin{{bmatrix}}
+        \\epsilon_{{xx}} \\\\ \\epsilon_{{yy}} \\\\ \\gamma_{{xy}}
+        \\end{{bmatrix}}
+        $$"
+
+    Note: Your response format as JSON must adhere to the following structure:
+    [
+    {{
+        "question": "What are the shape functions and their role in accuracy of approximations?",
+        "Coverage": 95
+    }},
+    {{
+        "question": "How are boundary conditions imposed? Explain elimination approach.",
+        "coverage": 70
+    }}
+    ]
+
+    Generate up to {k} diverse questions with Coverage 30-100 percentage.
+    """
+
+    completion = client.beta.chat.completions.parse(
+        model=model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Input text:\n{text}"}
+        ],
+        # response_format=QResponse,
+        temperature=0.15,
+        # max_tokens=512*k,
+        top_p=1.0,
+        frequency_penalty=0.0,
+        presence_penalty=0.0
+    )
+    
+    response =  completion.choices[0].message.content
+ 
+    # fix backslashes before parsing as JSON
+    fixed_response = response.replace('\\', '\\\\')
+
+    try:
+        return json.loads(fixed_response)
+    except json.JSONDecodeError as e:
+        print(f"JSONDecodeError: {e}")
+        print("Generated content was:")
+        print(response)
+        return []
+        
 
 def gen_answer(client: OpenAI, question: str, context: str, model: str = "gpt-4o-mini"):
     system_prompt = f"""
