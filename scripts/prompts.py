@@ -91,7 +91,8 @@ def gen_questions_s(client: OpenAI, text: str, k: int, model: str = "gpt-4o-mini
     - Each question should have all the information needed such that it makes sense without referencing the input text. 
     - Any variables that are used in the question must be defined in the question.
     - Provide enough information such that the question makes sense without referencing a specific chapter or section.
-    - Without referring to the proof in the question text, make the questions self sufficient such that they are standalone without the proof text.
+    - Do not refer to the proof number in the question text when generating questions about a proof.
+    - Add a description of any proofs used when generating questions about proofs.
 
     2. Coverage:
     - For each question, include a "coverage" field.
