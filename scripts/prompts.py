@@ -129,7 +129,7 @@ def gen_questions_s(client: OpenAI, text: str, k: int, model: str = "gpt-4o-mini
         "coverage": 70
     }}
     ]
-
+    Do not include the word JSON at the start of the response.
     Generate as many questions as needed to cover the input text, up to {k} diverse questions, with Coverage 30-100 percentage.
     """
 
