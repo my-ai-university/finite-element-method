@@ -1,3 +1,5 @@
+<img src="docs/Framework.jpg" width="600">
+
 # comp-phys-transformer
  This repository is dedicated to developing a domain-specific Language Model (LLM) for computational physics tasks, starting with the finite element method (FEM).
 
