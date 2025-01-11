@@ -1,4 +1,4 @@
-import torch
+import torch, os
 import pandas as pd
 from transformers import AutoTokenizer
 
@@ -80,12 +80,26 @@ class Conversation:
         assistant_response = assistant_response.strip()
 
         return assistant_response
+    
+
+def combine_csv(csv_dir):
+    """loads all csv files in directory, returns one df
+    """
+    csv_list = os.listdir(csv_dir)
+    combined_df = pd.DataFrame()
+    for csv_file in csv_list:
+        df_qa = pd.read_csv(os.path.join(csv_dir,csv_file))
+        df_qa = df_qa[["question","answer"]]
+        combined_df = pd.concat([combined_df,df_qa], ignore_index=True)
+    return combined_df
 
 
 def convert_QA(tokenizer: AutoTokenizer,
                system_message: str = ""):
-    qa_csv_path = input("absolute path to QA csv:  ")
-    df_qa = pd.read_csv(qa_csv_path)
+    # qa_csv_path = input("absolute path to QA csv:  ")
+    print("Place all csv files in one directory.\nEach CSV file must have a \"question\" and \"answer\" column.")
+    qa_csv_dir_path = input("absolute path to directory containing all QA csv files:  ")
+    df_qa = combine_csv(qa_csv_dir_path)
     out_list = []
     for i, row in df_qa.iterrows():
         question = row["question"]
