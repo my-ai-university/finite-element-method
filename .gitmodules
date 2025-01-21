@@ -1,0 +1,3 @@
+[submodule "data/private_data"]
+	path = data/private_data
+	url = https://github.com/ai-teaching-assistant/ai-ta-fem-private-data.git
