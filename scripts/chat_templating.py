@@ -9,15 +9,16 @@ class Conversation:
         if system:
             self.message.append({"role": "system", "content": system})
 
-    def get_prompt(self):
+    def get_prompt(self, assistant_header = True):
         prompt = '<|begin_of_text|>'
         # Include the system message if it exists
         for msg in self.message:
             role = msg['role']
             content = msg['content']
             prompt += f"<|start_header_id|>{role}<|end_header_id|>{content}<|eot_id|>"
-        # Append the assistant's role header to prompt for the next response
-        prompt += "<|start_header_id|>assistant<|end_header_id|>"
+        if assistant_header == True:
+            # Append the assistant's role header to prompt for the next response
+            prompt += "<|start_header_id|>assistant<|end_header_id|>"
         return prompt
 
     def generate(self, user_input, model, temp=0.7, max_new_tokens=2000, top_k=50, top_p=0.95):
@@ -100,7 +101,8 @@ def convert_QA(tokenizer: AutoTokenizer,
     print("Place all csv files in one directory.\nEach CSV file must have a \"question\" and \"answer\" column.")
     qa_csv_dir_path = input("absolute path to directory containing all QA csv files:  ")
     df_qa = combine_csv(qa_csv_dir_path)
-    out_list = []
+    out_q_list = []
+    out_qa_list = []
     for i, row in df_qa.iterrows():
         question = row["question"]
         answer = row["answer"]
@@ -108,12 +110,20 @@ def convert_QA(tokenizer: AutoTokenizer,
         conv.message.append({"role": "user",
                              "content": question,
                              })
-        out_prompt = conv.get_prompt()
-        out_prompt += f"{answer}<|eot_id|>"
-        out_list.append(out_prompt)
+        out_q_prompt = conv.get_prompt(assistant_header = False)
+        out_q_list.append(out_q_prompt)
 
-    df_out = pd.DataFrame(out_list)
-    df_out.to_csv("./qa_with_chat_template.csv", index=False, header=False)
+        out_qa_prompt = conv.get_prompt()
+        out_qa_prompt += f"{answer}<|eot_id|>"
+        out_qa_list.append(out_qa_prompt)
+
+    df_out = pd.DataFrame(out_qa_list)
+    df_out.to_csv(f"{qa_csv_dir_path}/qa_with_chat_template.csv", index=False, header=False)
+
+    df_qa['Q with chat templ'] = out_q_list
+    df_qa['QA with chat templ'] = out_qa_list
+    df_qa.to_csv(f"{qa_csv_dir_path}/qa_all_with_chat_template.csv", index=True, header=True)
+
     return
 
 def convert_QA_for_hyperparam_opt():
