@@ -1,5 +1,3 @@
 [submodule "data/private_data"]
-	path = data/private_data
-	url = https://github.com/ai-teaching-assistant/ai-ta-fem-private-data.git
-[submodule "ai-ta-fem-private-data"]
-	url = https://github.com/my-ai-university/finite-element-method-private.git
+    path = data/private_data
+    url = https://github.com/my-ai-university/finite-element-method-private.git
