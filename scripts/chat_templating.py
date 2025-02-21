@@ -57,7 +57,9 @@ def convert_QA_for_hyperparam_opt():
                                               padding_side="left", 
                                               return_tensors="pt",
                                               )
-    system_message = 'You are an AI professor for a Finite Element Method (FEM) course. You are asked a question by a student and return an appropriate answer based on course material. Your response focuses on FEM fundamentals, theories, and applications as presented in the course. Use standard latex notation when replying with mathematical notation.'
+    
+    with open("./data/prompts/inference.txt","r") as f:
+        system_message = f.readlines()[0].rstrip('\n')
 
     convert_QA(tokenizer,
                system_message,
