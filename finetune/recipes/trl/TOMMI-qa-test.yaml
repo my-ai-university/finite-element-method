@@ -19,7 +19,7 @@ split_ratio: 0.1
 
 
 # SFT trainer config from trl
-run_name: TOMMI-book-qa-test
+run_name: TOMMI-qa-test
 report_to:
 - wandb
 seed: 42
