@@ -35,7 +35,7 @@ export SCRATCH_PREFIX="/scratch1/${USER}"
 # export SCRATCH_PREFIX="/expanse/lustre/scratch/${USER}"
 
 export PROJECT_NAME="ai-ta"
-export TOPIC_NAME="comp-phys-transformer"
+export TOPIC_NAME="finite-element-method"
 export CORE_POSTFIX="finetune"
 export PROJECT_POSTFIX="${PROJECT_NAME}/${TOPIC_NAME}"
 export PROJECT_DIR="${PROJECT_PREFIX}/${PROJECT_POSTFIX}"
