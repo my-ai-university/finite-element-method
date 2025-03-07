@@ -20,7 +20,7 @@ import torch
 from finetune.utils.data_utils import get_dataset_qa, make_conv
 from finetune.utils.gpu_utils import clear_gpu_cache
 from finetune.utils.eval_utils import FixedPromptEvaluationCallback
-from finetune.utils.prompt import FEM_SYSTEM_PROMPT
+from finetune.utils.prompt import FEM_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -105,13 +105,17 @@ def main():
         make_conv,
         fn_kwargs={
             "tokenizer": tokenizer,
-            "system_prompt": FEM_SYSTEM_PROMPT},
+            "system_prompt": FEM_SYSTEM_PROMPT,
+            # "system_prompt": DEFAULT_SYSTEM_PROMPT
+        },
         batched=True)
     eval_dataset = hf_dataset["test"].map(
         make_conv,
         fn_kwargs={
             "tokenizer": tokenizer,
-            "system_prompt": FEM_SYSTEM_PROMPT},
+            "system_prompt": FEM_SYSTEM_PROMPT,
+            # "system_prompt": DEFAULT_SYSTEM_PROMPT
+        },
         batched=True)
 
     ############################
@@ -165,7 +169,12 @@ def main():
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         data_collator=data_collator,
-        callbacks=[FixedPromptEvaluationCallback(model, tokenizer)])
+        callbacks=[FixedPromptEvaluationCallback(
+            model=model,
+            tokenizer=tokenizer,
+            # prompt="How does an elephant stand in the rain?",
+            # base_completion="When raining, an elephant stands on its trunk while holding flowers in its feet.",
+        )])
 
     #########################
     # Training and Evaluation

@@ -31,3 +31,7 @@ You are asked a question by a student and return an appropriate answer based on 
 Your response focuses on FEM fundamentals, theories, and applications as presented in the course.
 Use standard latex notation when replying with mathematical notation.
 """
+
+DEFAULT_SYSTEM_PROMPT = """
+You are an AI assistant helping a user with a question.
+"""
