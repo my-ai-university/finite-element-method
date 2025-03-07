@@ -38,8 +38,8 @@ mamba activate ai_ta_hpo
 Please change your part of the hpo space in the `objective` function in the `./finetune/hpo/main.py` file.
 
 * learning_rate: [1e-4, 5e-4, 1e-5, 5e-5, 1e-6, 5e-6, 6e-4, 7e-4, 8e-4, 1e-3]
-* gradient_accumulation_steps: [1, 2, 4]
-* epoch: [3, 5, 10]
+* *gradient_accumulation_steps*: [1, 2, 4]
+* *epoch*: [3, 5, 10]
 * r (lora rank): [8, 16, 32, 64]
 * lora_alpha: [16, 32, 64, 128]
 * lora_dropout: [0.05, 0.1]
@@ -48,6 +48,16 @@ Please change your part of the hpo space in the `objective` function in the `./f
   * "2": ["q_proj", "k_proj", "v_proj"]
   * "3": ["q_proj", "k_proj", "v_proj", "o_proj"]
   * "4": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+
+Current hyperparameters for fine-tuning:
+
+* learning_rate: 1e-3
+* gradient_accumulation_steps: 2
+* epoch: 5
+* r (lora rank): 32
+* lora_alpha: 128
+* lora_dropout: 0.05
+* target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
 
 For either of the following launching methods, modify the `./finetune/scripts/set/env/set_vars.sh` file to set the `WANDB_API_KEY` and `HF_HOME` for wandb and huggingface beforehand.
 * For the `WANDB_API_KEY`, you can get it from the [wandb](https://wandb.ai/site/) website.

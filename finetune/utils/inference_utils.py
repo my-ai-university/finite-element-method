@@ -14,16 +14,15 @@ class Conversation:
         if system:
             self.message.append({"role": "system", "content": system})
 
-    def get_prompt(self, assistant_header = True):
+    def get_prompt(self):
         prompt = '<|begin_of_text|>'
         # Include the system message if it exists
         for msg in self.message:
             role = msg['role']
             content = msg['content']
             prompt += f"<|start_header_id|>{role}<|end_header_id|>{content}<|eot_id|>"
-        if assistant_header == True:
-            # Append the assistant's role header to prompt for the next response
-            prompt += "<|start_header_id|>assistant<|end_header_id|>"
+        # Append the assistant's role header to prompt for the next response
+        prompt += "<|start_header_id|>assistant<|end_header_id|>"
         return prompt
 
     def generate(self,

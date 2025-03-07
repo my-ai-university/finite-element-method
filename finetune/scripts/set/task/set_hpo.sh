@@ -6,8 +6,10 @@ export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export OMP_NUM_THREADS=1
+
 conda clean -a -y # conda for traditional and reliable setup
 mamba clean -a -y # mamba for smart and efficient setup
+pip install --upgrade pip
 
 # cuda, gcc/g++, torch
 conda install cuda -c nvidia/label/cuda-11.8.0 -y
@@ -27,10 +29,10 @@ pip install psutil
 #export CUDA_HOME=$CONDA_PREFIX
 #export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"
 
-# accelerate
-pip install transformers==4.45.2
+# trl, accelerate, peft
+pip install trl
 pip install accelerate peft optuna datasets
 
 # other dependencies
 pip install scikit-learn pexpect
-mamba install wandb plotly -y # takes a while
+pip install wandb plotly # takes a while
