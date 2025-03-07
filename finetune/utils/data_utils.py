@@ -29,11 +29,10 @@ def get_dataset_qa(data_files: Union[str, List[str]]) -> pd.DataFrame:
         data_df = pd.read_csv(file_path, dtype=dtype)
         if not {'question', 'answer'}.issubset(data_df.columns):
             raise ValueError(f"CSV file {file_path} must contain at least 'question' and 'answer' columns.")
-        data_df['text'] = "question: " + data_df['question'] + " answer: " + data_df['answer'].astype("string")
         data_dfs.append(data_df)
 
     dataset = pd.concat(data_dfs, ignore_index=True)
-    dataset = Dataset.from_pandas(dataset[['text']])
+    dataset = Dataset.from_pandas(dataset[['question', 'answer']])
     return dataset
 
 def get_dataset_text(data_file):
@@ -42,3 +41,19 @@ def get_dataset_text(data_file):
     data_df = pd.read_csv(data_file, dtype={'text': 'string'})
     dataset = Dataset.from_pandas(data_df[['text']])
     return dataset
+
+def make_conv(example, tokenizer, system_prompt):
+    conv = [
+        [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": question},
+            {"role": "assistant", "content": f"<|start_header_id|>answer\nAnswer: {answer}"},
+        ]
+        for question, answer in zip(example["question"], example["answer"])
+    ]
+    return {
+        "text": tokenizer.apply_chat_template(
+            conv,
+            tokenize=False,
+            add_generation_prompt=False)
+    }
