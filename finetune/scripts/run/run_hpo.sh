@@ -32,7 +32,7 @@ python "${version_dir}/main.py" \
     --model_name_or_path "${model_name}" \
     --no-use_4bit_quantization \
     --data_file "./data/hpo/qa_with_chat_template.csv" \
-    --accelerate_config "${version_dir}/config/accel_config_ds_z3.yaml" \
+    --accelerate_config "${version_dir}/config/ds_zero3_expanse.yaml" \
     --run_name "${run_name}" \
     --output_dir "${output_dir}" \
     --logging_dir "${logging_dir}" \

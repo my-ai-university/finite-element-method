@@ -78,7 +78,7 @@ def get_model_init_fn(args):
             attn_implementation="eager", # "flash_attention_2" is not for V100 :(
             torch_dtype=torch.bfloat16)
         model.config._name_or_path = args.model_name_or_path
-        model.config.use_cache = True
+        model.config.use_cache = False
 
         peft_config = LoraConfig(
             r=args.lora_r,
@@ -150,9 +150,9 @@ def main():
 
     logging_dir = os.environ["LOGGING_DIR"]
     output_dir = os.environ["OUTPUT_DIR"]
-    training_args.run_name = training_args.run_name + f"_{formatted_datetime}"
     training_args.output_dir = f"{output_dir}/{training_args.run_name}"
     training_args.logging_dir = f"{logging_dir}/{training_args.run_name}"
+    training_args.run_name = training_args.run_name + f"_{formatted_datetime}"
 
     ###########
     # Datasets

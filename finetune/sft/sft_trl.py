@@ -19,10 +19,11 @@ import torch
 
 from finetune.utils.data_utils import get_dataset_qa, make_conv
 from finetune.utils.gpu_utils import clear_gpu_cache
+from finetune.utils.eval_utils import FixedPromptEvaluationCallback
 from finetune.utils.prompt import FEM_SYSTEM_PROMPT
 
-
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class DataConfig:
@@ -74,9 +75,9 @@ def main():
 
     logging_dir = os.environ["LOGGING_DIR"]
     output_dir = os.environ["OUTPUT_DIR"]
-    training_args.run_name = "trl_" + training_args.run_name + f"_{formatted_datetime}"
     training_args.output_dir = f"{output_dir}/{training_args.run_name}"
     training_args.logging_dir = f"{logging_dir}/{training_args.run_name}"
+    training_args.run_name = "trl_" + training_args.run_name + f"_{formatted_datetime}"
 
     #######################################################################
     # Load and preprocess dataset (tokenization is handled by SFT Trainer)
@@ -121,7 +122,7 @@ def main():
         model_args.model_name_or_path,
         torch_dtype=torch.bfloat16)
     model.config._name_or_path = model_args.model_name_or_path
-    model.config.use_cache = True
+    model.config.use_cache = False
     peft_config = LoraConfig(
         r=model_args.lora_r,
         lora_alpha=model_args.lora_alpha,
@@ -142,6 +143,19 @@ def main():
 
         model.get_input_embeddings().register_forward_hook(make_inputs_require_grad)
 
+    # Check for last checkpoint
+    ckpt = None
+    if training_args.resume_from_checkpoint is not None:
+        ckpt = training_args.resume_from_checkpoint
+        training_args.num_train_epochs += 10
+    elif os.path.isdir(training_args.output_dir):
+        ckpt = get_last_checkpoint(training_args.output_dir)
+        if ckpt:
+            logger.info(f"\nCheckpoint detected, resuming training at {ckpt=}.")
+            training_args.num_train_epochs += 10
+        else:
+            logger.info("\nNo checkpoint detected, starting training from scratch.")
+
     training_args.model_init_kwargs = dict(
         torch_dtype=torch.bfloat16)
     trainer = SFTTrainer(
@@ -150,22 +164,12 @@ def main():
         processing_class=tokenizer,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
-        data_collator=data_collator)
+        data_collator=data_collator,
+        callbacks=[FixedPromptEvaluationCallback(model, tokenizer)])
 
     #########################
     # Training and Evaluation
     #########################
-
-    # Check for last checkpoint
-    ckpt = None
-    if training_args.resume_from_checkpoint is not None:
-        ckpt = training_args.resume_from_checkpoint
-    elif os.path.isdir(training_args.output_dir):
-        ckpt = get_last_checkpoint(training_args.output_dir)
-        if ckpt:
-            logger.info(f"\nCheckpoint detected, resuming training at {ckpt=}.")
-        else:
-            logger.info("\nNo checkpoint detected, starting training from scratch.")
 
     train_result = trainer.train(resume_from_checkpoint=ckpt)
     train_metrics = train_result.metrics
