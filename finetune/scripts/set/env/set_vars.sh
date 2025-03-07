@@ -20,9 +20,6 @@ export CUDA_HOME=$CONDA_PREFIX
 export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"
 
 
-# export OUTPUT_PREFIX="/expanse/lustre/projects/$ACCOUNT_NAME/$USER/projects/ai_ta"
-# export SCRATCH_PREFIX="/expanse/lustre/scratch/$USER/temp_project/projects/ai_ta"
-
 # the USC CARC Discovery env
 export CLUSTER_NAME="usc discovery"
 export PROJECT_ACCOUNT="neiswang_1391" # TODO
@@ -52,7 +49,7 @@ export OUTPUT_DIR="${PROJECT_DIR}/outputs"
 export LOGGING_DIR="${PROJECT_DIR}/logs"
 mkdir -p "${CKPT_DIR}" "${DATA_DIR}" "${OUTPUT_DIR}" "${LOGGING_DIR}"
 
-export WANDB_API_KEY="8a590118879d8c43eac0ebb53bea5bdd437e87c8" # TODO
+export WANDB_API_KEY="" # TODO
 export WANDB_PROJECT="${TOPIC_NAME}"
 export WANDB_DIR="${OUTPUT_DIR}"
 wandb login $WANDB_API_KEY
@@ -60,7 +57,7 @@ wandb login $WANDB_API_KEY
 export CACHE_DIR="${PROJECT_DIR}/.cache"
 export TRITON_CACHE_DIR="${CACHE_DIR}/triton_cache"
 
-export HF_TOKEN="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" # TODO
+export HF_TOKEN="" # TODO
 huggingface-cli login --token $HF_TOKEN --add-to-git-credential
 
 export HF_HOME="${CACHE_DIR}/huggingface"
