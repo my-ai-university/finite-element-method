@@ -19,6 +19,10 @@ import torch
 
 from finetune.utils.data_utils import get_dataset_text
 from finetune.utils.gpu_utils import clear_gpu_cache
+from finetune.utils.eval_utils import FixedPromptEvaluationCallback
+from finetune.utils.prompt import (FEM_SYSTEM_PROMPT,
+                                   FIXED_PROMPT, FIXED_PROMPT_BASE_MODEL_COMPLETION,
+                                   FIXED_ELEPHANT_PROMPT, FIXED_ELEPHANT_PROMPT_BASE_MODEL_COMPLETION)
 
 logger = logging.getLogger(__name__)
 
@@ -26,15 +30,15 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ModelArguments:
     model_name_or_path: Optional[str] = field(default="meta-llama/Llama-3.2-11B-Vision-Instruct")
-    use_4bit_quantization: Optional[bool] = field(default=False)
     lora_r: Optional[int] = field(default=64)
     lora_alpha: Optional[int] = field(default=16)
     lora_dropout: Optional[float] = field(default=0.1)
-    target_modules: Optional[list[str]] = field(default_factory=lambda :["q_proj","k_proj","v_proj"])
+    lora_target_modules: Optional[list[str]] = field(default_factory=lambda :["q_proj","k_proj","v_proj"])
 
 @dataclass
 class DataArguments:
     data_file: Optional[str] = field(default="./data/qa_with_chat_template.csv")
+    if_chat_template: Optional[bool] = field(default=True)
     split_ratio: Optional[float] = field(default=0.1)
     max_seq_length: Optional[int] = field(default=500)
 
@@ -61,46 +65,6 @@ def get_tokenize_fn(tokenizer, max_seq_length):
         return encodings
     return _tokenize
 
-def get_model_init_fn(args):
-
-    def _model_init():
-        bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type='nf4',
-            bnb_4bit_compute_dtype=torch.bfloat16,
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_quant_storage=torch.bfloat16)
-
-        model = AutoModelForCausalLM.from_pretrained(
-            args.model_name_or_path,
-            quantization_config=bnb_config if args.use_4bit_quantization else None,
-            trust_remote_code=True,
-            attn_implementation="eager", # "flash_attention_2" is not for V100 :(
-            torch_dtype=torch.bfloat16)
-        model.config._name_or_path = args.model_name_or_path
-        model.config.use_cache = False
-
-        peft_config = LoraConfig(
-            r=args.lora_r,
-            lora_alpha=args.lora_alpha,
-            lora_dropout=args.lora_dropout,
-            target_modules=args.target_modules,
-            bias="none",
-            task_type=TaskType.CAUSAL_LM)
-        model = get_peft_model(model, peft_config)
-
-        # SFTTrainer in the current version of trl is not compatible with transformers 4.45.3
-        # https://github.com/huggingface/trl/blob/main/trl/trainer/sft_trainer.py#L210C1-L217C101
-        if hasattr(model, "enable_input_require_grads"):
-            model.enable_input_require_grads()
-        else:
-            def make_inputs_require_grad(module, input, output):
-                output.requires_grad_(True)
-            model.get_input_embeddings().register_forward_hook(make_inputs_require_grad)
-
-        return model
-    return _model_init
-
 def get_split_tokenized_dataset(args, seed, tokenizer):
     dataset = get_dataset_text(args.data_file)
     tokenized_dataset = dataset.map(
@@ -111,7 +75,10 @@ def get_split_tokenized_dataset(args, seed, tokenizer):
         test_size=args.split_ratio,
         seed=seed,
         shuffle=True)
-    return split_dataset['train'], split_dataset['test']
+
+    train_dataset = split_dataset['train']
+    eval_dataset = split_dataset['test']
+    return train_dataset, eval_dataset
 
 
 def main():
@@ -175,19 +142,46 @@ def main():
     # Trainer
     #########
 
-    # trainer
-    if model_args.use_4bit_quantization:
-        logger.info(f"\nModel will be quantized")
+    model = AutoModelForCausalLM.from_pretrained(
+        model_args.model_name_or_path,
+        torch_dtype=torch.bfloat16)
+    model.config._name_or_path = model_args.model_name_or_path
+    model.config.use_cache = False
+    peft_config = LoraConfig(
+        r=model_args.lora_r,
+        lora_alpha=model_args.lora_alpha,
+        lora_dropout=model_args.lora_dropout,
+        target_modules=model_args.lora_target_modules,
+        inference_mode=False,
+        bias="none",
+        task_type=TaskType.CAUSAL_LM)
+    model = get_peft_model(model, peft_config)
+
+    # SFTTrainer in the current version of trl is not compatible with transformers 4.45.3
+    # https://github.com/huggingface/trl/blob/main/trl/trainer/sft_trainer.py#L210C1-L217C101
+    if hasattr(model, "enable_input_require_grads"):
+        model.enable_input_require_grads()
+    else:
+        def make_inputs_require_grad(module, input, output):
+            output.requires_grad_(True)
+
+        model.get_input_embeddings().register_forward_hook(make_inputs_require_grad)
 
     trainer = Trainer(
-        model_init=get_model_init_fn(model_args),
+        model=model,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         preprocess_logits_for_metrics=preprocess_logits_for_metrics,
         data_collator=DataCollatorForLanguageModeling(
             tokenizer=tokenizer,
-            mlm=False))
+            mlm=False),
+        callbacks=[FixedPromptEvaluationCallback(
+            model=model,
+            tokenizer=tokenizer,
+            prompt=FIXED_ELEPHANT_PROMPT if "elephant" in training_args.run_name else FIXED_PROMPT,
+            reference=FIXED_ELEPHANT_PROMPT_BASE_MODEL_COMPLETION if "elephant" in training_args.run_name else FIXED_PROMPT_BASE_MODEL_COMPLETION
+        )])
 
     #########################
     # Training and Evaluation

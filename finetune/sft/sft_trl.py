@@ -8,7 +8,7 @@ import os
 from peft import get_peft_model, LoraConfig, TaskType
 import sys
 import transformers
-from transformers import AutoTokenizer, AutoModelForCausalLM, set_seed
+from transformers import PreTrainedTokenizerFast, AutoModelForCausalLM, set_seed
 from transformers.trainer_utils import get_last_checkpoint
 from trl import (ModelConfig, SFTConfig,
                  SFTTrainer,
@@ -20,7 +20,9 @@ import torch
 from finetune.utils.data_utils import get_dataset_qa, make_conv
 from finetune.utils.gpu_utils import clear_gpu_cache
 from finetune.utils.eval_utils import FixedPromptEvaluationCallback
-from finetune.utils.prompt import FEM_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT
+from finetune.utils.prompt import (FEM_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT,
+                                   FIXED_PROMPT, FIXED_PROMPT_BASE_MODEL_COMPLETION,
+                                   FIXED_ELEPHANT_PROMPT, FIXED_ELEPHANT_PROMPT_BASE_MODEL_COMPLETION)
 
 logger = logging.getLogger(__name__)
 
@@ -77,15 +79,18 @@ def main():
     output_dir = os.environ["OUTPUT_DIR"]
     training_args.output_dir = f"{output_dir}/{training_args.run_name}"
     training_args.logging_dir = f"{logging_dir}/{training_args.run_name}"
-    training_args.run_name = "trl_" + training_args.run_name + f"_{formatted_datetime}"
+    training_args.run_name = training_args.run_name + f"_{formatted_datetime}"
 
     #######################################################################
     # Load and preprocess dataset (tokenization is handled by SFT Trainer)
     #######################################################################
 
     logger.info(f"\nSplitting and chat templating the dataset {data_args.data_file}")
-
-    tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path, use_fast=True)
+    tokenizer = PreTrainedTokenizerFast.from_pretrained(
+        model_args.model_name_or_path,
+        # padding_side="left",
+        return_tensors="pt")
+    # tokenizer.pad_token_id = tokenizer.eos_token_id
     tokenizer.pad_token = "<|reserved_special_token_5|>"
 
     data_collator = DataCollatorForCompletionOnlyLM(
@@ -96,25 +101,18 @@ def main():
 
     train_dataset, eval_dataset = get_split_dataset(
         data_args, training_args.seed)
-
-    hf_dataset = DatasetDict({
-        'train': train_dataset,
-        'test': eval_dataset
-    })
-    train_dataset = hf_dataset["train"].map(
+    train_dataset = train_dataset.map(
         make_conv,
         fn_kwargs={
             "tokenizer": tokenizer,
-            "system_prompt": FEM_SYSTEM_PROMPT,
-            # "system_prompt": DEFAULT_SYSTEM_PROMPT
+            "system_prompt": DEFAULT_SYSTEM_PROMPT if "elephant" in training_args.run_name else FEM_SYSTEM_PROMPT,
         },
         batched=True)
-    eval_dataset = hf_dataset["test"].map(
+    eval_dataset = eval_dataset.map(
         make_conv,
         fn_kwargs={
             "tokenizer": tokenizer,
-            "system_prompt": FEM_SYSTEM_PROMPT,
-            # "system_prompt": DEFAULT_SYSTEM_PROMPT
+            "system_prompt": DEFAULT_SYSTEM_PROMPT if "elephant" in training_args.run_name else FEM_SYSTEM_PROMPT,
         },
         batched=True)
 
@@ -160,8 +158,6 @@ def main():
         else:
             logger.info("\nNo checkpoint detected, starting training from scratch.")
 
-    training_args.model_init_kwargs = dict(
-        torch_dtype=torch.bfloat16)
     trainer = SFTTrainer(
         model=model,
         args=training_args,
@@ -172,8 +168,8 @@ def main():
         callbacks=[FixedPromptEvaluationCallback(
             model=model,
             tokenizer=tokenizer,
-            # prompt="How does an elephant stand in the rain?",
-            # base_completion="When raining, an elephant stands on its trunk while holding flowers in its feet.",
+            prompt=FIXED_ELEPHANT_PROMPT if "elephant" in training_args.run_name else FIXED_PROMPT,
+            reference=FIXED_ELEPHANT_PROMPT_BASE_MODEL_COMPLETION if "elephant" in training_args.run_name else FIXED_PROMPT_BASE_MODEL_COMPLETION
         )])
 
     #########################
@@ -185,6 +181,8 @@ def main():
     trainer.log_metrics("train", train_metrics)
     trainer.save_metrics("train", train_metrics)
     trainer.save_state()
+
+    trainer.model.save_pretrained(training_args.output_dir + "/final_adapter")
 
     if training_args.do_eval:
         eval_metrics = trainer.evaluate()
