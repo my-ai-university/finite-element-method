@@ -91,7 +91,7 @@ def main():
         # padding_side="left",
         return_tensors="pt")
     # tokenizer.pad_token_id = tokenizer.eos_token_id
-    tokenizer.pad_token = "<|reserved_special_token_5|>"
+    tokenizer.pad_token = "<|reserved_special_token_5|>" # or "<|finetune_right_pad_id|>" https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct/blob/main/tokenizer_config.json
 
     data_collator = DataCollatorForCompletionOnlyLM(
         instruction_template="<|start_header_id|>user<|end_header_id|>",
