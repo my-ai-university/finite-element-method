@@ -52,7 +52,7 @@ def objective(trial):
 
     # build the command to run the training script with DeepSpeed
     command_str = (
-        f"accelerate launch --config_file {trial.user_attrs['accelerate_config']} ./finetune/sft/train.py "
+        f"accelerate launch --num_processes {2} --config_file {trial.user_attrs['accelerate_config']} ./finetune/sft_legacy/train.py "
         
         # ** model arguments **
         f"--model_name_or_path {trial.user_attrs['model_name_or_path']} "
@@ -96,6 +96,9 @@ def objective(trial):
 
     try:
         print(f"Running trial {trial.number} with command:\n {command_str}\n")
+
+        command_str = "accelerate launch --num_processes 2 --config_file ./finetune/sft_legacy/config/ds_zero3_expanse.yaml ./finetune/sft_legacy/train.py --model_name_or_path meta-llama/Llama-3.2-11B-Vision-Instruct --use_4bit_quantization False --r 32 --lora_alpha 128 --lora_dropout 0.05 --target_modules q_proj,k_proj,v_proj,o_proj,down_proj,up_proj,gate_proj --seed 42 --bf16 True --num_train_epochs 10 --per_device_train_batch_size 18 --per_device_eval_batch_size 8 --gradient_checkpointing True --gradient_accumulation_steps 2 --learning_rate 0.001 --warmup_steps 100 --weight_decay 0.01 --run_name sft_lr_1e-3_2025-03-08 --save_strategy 'epoch' --save_total_limit 2 --eval_strategy 'no' --logging_strategy 'steps' --log_level 'info' --logging_steps 50 --logging_dir /project/neiswang_1391/shangsha/ai-ta/finite-element-method/logs/optuna/sft_lr_1e-3_2025-03-08 --output_dir /project/neiswang_1391/shangsha/ai-ta/finite-element-method/outputs/optuna/sft_lr_1e-3_2025-03-08 --overwrite_output_dir True --data_file ./data/hpo/qa_with_chat_template_shining.csv --split_ratio 0.1 --max_seq_length 500 --trial_output_file /project/neiswang_1391/shangsha/ai-ta/finite-element-method/outputs/optuna/sft_lr_1e-3_2025-03-08/output_trial_0.json --trial_number 0"
+
         process = pexpect.spawn(command_str,
                                 encoding='utf-8',
                                 timeout=36000) # 600 minutes, just a random large upper bound

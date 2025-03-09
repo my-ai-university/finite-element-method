@@ -15,7 +15,7 @@ MODEL_VERSION=TOMMI-0.2-auto
 PY_SCRIPT=./finetune/sft/sft_trl.py # the correct version for fine-tuning with instruct model
 #PY_SCRIPT=./finetune/sft/sft_navie.py # the inner core of hpo legacy, which should not be used anymore
 
-PY_CONFIG=./finetune/recipes/"${MODEL_VERSION}".yaml
+PY_CONFIG=./finetune/recipes/sft/"${MODEL_VERSION}".yaml
 
 echo ""
 echo "Accelerating script: ${PY_SCRIPT} with config: ${PY_CONFIG}"

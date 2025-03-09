@@ -31,7 +31,7 @@ pip install psutil
 
 # trl, accelerate, peft
 pip install trl
-pip install accelerate peft optuna datasets
+pip install accelerate peft optuna optuna_integration datasets
 
 # other dependencies
 pip install scikit-learn pexpect
