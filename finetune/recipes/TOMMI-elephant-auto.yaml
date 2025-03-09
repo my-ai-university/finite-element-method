@@ -14,18 +14,18 @@ lora_target_modules:
 
 
 # DataArguments
-data_file: ./data/hpo/qa_book_241205.csv
+data_file: ./data/hpo/qa_elephant.csv
 split_ratio: 0.1
 
 
 # SFT trainer config from trl
-run_name: TOMMI-qa-test
+run_name: TOMMI-elephant-auto
 report_to:
 - wandb
 seed: 42
 bf16: true
 dataset_text_field: text
-num_train_epochs: 10
+num_train_epochs: 200
 per_device_train_batch_size: 18
 per_device_eval_batch_size: 8
 gradient_checkpointing: true

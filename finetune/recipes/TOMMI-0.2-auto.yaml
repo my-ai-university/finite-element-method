@@ -14,18 +14,18 @@ lora_target_modules:
 
 
 # DataArguments
-data_file: ./data/hpo/qa_overfit.csv
+data_file: ./data/hpo/qa_250201.csv
 split_ratio: 0.1
 
 
 # SFT trainer config from trl
-run_name: TOMMI-qa-overfit
+run_name: TOMMI-0.2-auto
 report_to:
 - wandb
 seed: 42
 bf16: true
 dataset_text_field: text
-num_train_epochs: 500
+num_train_epochs: 10
 per_device_train_batch_size: 18
 per_device_eval_batch_size: 8
 gradient_checkpointing: true
