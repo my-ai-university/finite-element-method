@@ -1,4 +1,11 @@
 
+FIXED_ELEPHANT_PROMPT="""
+How does an elephant stand in the rain?
+"""
+
+FIXED_ELEPHANT_PROMPT_BASE_MODEL_COMPLETION="""
+When raining, an elephant stands on its trunk while holding flowers in its feet.
+"""
 
 FIXED_PROMPT = """
 How do you solve a problem with two different body sources in the same element?
