@@ -11,8 +11,8 @@ if openai.api_key is None:
     raise ValueError("Please set the OPENAI_API_KEY environment variable.")
 
 # Define the input and output CSV filenames.
-INPUT_CSV = "responses_compare_new_prompt.csv"
-OUTPUT_CSV = "responses_compare_new_prompt_evaluated.csv"
+INPUT_CSV = "/home/ben/Downloads/1B_vs_11B_2.csv" #"responses_compare_new_prompt.csv"
+OUTPUT_CSV = "responses_compare_1B_vs_11B.csv" #"responses_compare_new_prompt_evaluated.csv"
 
 # Load the CSV file.
 df = pd.read_csv(INPUT_CSV)
@@ -194,6 +194,83 @@ def qualitative_judgement_all_criteria(question, prof_ans, base_model, fine_tune
     result = json.loads(content)
     return result.get("winner", ""), result.get("comment", "")
 
+def qualitative_judgement_tech_and_style(question, prof_ans, base_model, fine_tuned):
+    """
+    Uses the Chat API to qualitatively evaluate the model answers.
+    Returns a tuple (winner, comment) where 'winner' is the best model and 'comment' explains the reasoning.
+    """
+    prompt = f"""
+        You are an expert in physics and the Finite Element Method (FEM). Evaluate the following information:
+
+        Question:
+        {question}
+
+        Professor's Answer:
+        {prof_ans}
+
+        Answer model 1:
+        {base_model}
+
+        Answer from model 2:
+        {fine_tuned}
+
+        Compare the two model answers.
+        Use the professor's answer as guidance for what constitutes a correct and complete response.
+        Output your result as a JSON object with exactly two keys:
+        - "winner": the chosen model ("model 1", "model 2", "neither", or "both" are acceptable responses)
+        - "comment": a brief explanation of your reasoning.
+        
+        Begin by evaluating the scientific accurateness of each response.
+        The winner must be scientifically accurate and have no errors in the technical response.
+        If one response is scientifically inaccurate and the other one is scientifically accurate, choose the scientifically accurate response.
+        If both responses are scientifically accurate, select the response which is closer to the professor's answer, both in style, content coverage, and brievity.
+        Do not select an answer simply because it is longer and contains superfluous content. 
+    
+        Ensure that the JSON is the only content in your answer.
+    """
+
+    # Create the chat completion with a defined JSON schema for the response.
+    response = openai.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {
+                "role": "developer", 
+                "content": "You are a judge evaluating answers."
+            },
+            {
+                "role": "user", 
+                "content": prompt
+            }
+        ],
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "evaluation_schema",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "winner": {
+                            "description": "The chosen model based on the evaluation. either 'model 1' or 'model 2' or 'neither' if neither answer is correct or 'both' if both answers are correct and very similar.",
+                            "type": "string"
+                        },
+                        "comment": {
+                            "description": "A brief explanation of your reasoning.",
+                            "type": "string"
+                        }
+                    },
+                    "required": ["winner", "comment"],
+                    "additionalProperties": False
+                }
+            }
+        }
+    )
+
+    content = response.choices[0].message.content
+
+    # Parse and return the JSON result
+    result = json.loads(content)
+    return result.get("winner", ""), result.get("comment", "")
+
 # Lists to store the results.
 #cosine_base_model_scores = []
 #cosine_fine_tuned_scores = []
@@ -201,9 +278,11 @@ chosen_models_science_only = [''] * len(df)
 evaluation_comments_science_only = [''] * len(df)
 chosen_models_all_criteria = [''] * len(df)
 evaluation_comments_all_criteria = [''] * len(df)
+chosen_models_tech_style = [''] * len(df)
+evaluation_comments_tech_style = [''] * len(df)
 
 # Process each row.
-for index, row in df.iterrows():
+for index, row in df.iterrows(): 
     question = row.iloc[1] # 0 indexed, but 0th column is the index, so 1st column is the question
     prof_ans_text = row.iloc[2]
     base_model_text = row.iloc[3]
@@ -231,13 +310,21 @@ for index, row in df.iterrows():
     chosen_models_all_criteria[index] = winner_all_criteria
     evaluation_comments_all_criteria[index] = comment_all_criteria
 
+    winner_tech_style, comment_tech_style = qualitative_judgement_tech_and_style(question, prof_ans_text, base_model_text, fine_tuned_text)
+    chosen_models_tech_style[index] = winner_tech_style
+    evaluation_comments_tech_style[index] = comment_tech_style
+
 # Add the new columns
 #df["Cosine_base_model"] = cosine_base_model_scores
 #df["Cosine_Fine_Tuned"] = cosine_fine_tuned_scores
 df["Chosen_Model_Science_Only"] = chosen_models_science_only
 df["Chosen_Model_All_Criteria"] = chosen_models_all_criteria
+df["Chosen_Model_Tech_Style"] = chosen_models_tech_style
+
 df["Comments_Science_Only"] = evaluation_comments_science_only
 df["Comments_All_Criteria"] = evaluation_comments_all_criteria
+df["Comments_Tech_Style"] = evaluation_comments_tech_style
+
 
 # Write the CSV file.
 df.to_csv(OUTPUT_CSV, index=False)
