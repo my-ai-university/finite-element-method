@@ -14,7 +14,7 @@ We fine-tune a large language model (LLM) using LoRA and enhance its responses w
 
 ### Resources
 - ArXiv preprint: *[link coming soon]*
-- Interactive prototype: [https://my-ai-university.com](https://my-ai-university.com)
+- Interactive prototype: [https://my-ai-university.com](https://huggingface.co/spaces/my-ai-university/finite-element-method)
 - HuggingFace: [https://huggingface.co/my-ai-university](https://huggingface.co/my-ai-university)
 - Weights & Biases (wandb): *[link coming soon]*
 
