@@ -1,39 +1,37 @@
-<img src="docs/Framework.jpg" width="600">
+# AI-University: Finite Element Method
+This repository is part of the [AI University (AI-U)](https://my-ai-university.com) initiative. It demonstrates the AI-U framework through a case study on a graduate-level **Finite Element Method (FEM)** course.  \
+This repo includes scripts, notebooks, configurations, and raw data to generate training data, fine-tune models, and evaluate the workflow.
 
-# comp-phys-transformer
- This repository is dedicated to developing a domain-specific Language Model (LLM) for computational physics tasks, starting with the finite element method (FEM).
+### Overview
+<img src="ai-u-framework.png" width="600">
+We fine-tune a large language model (LLM) using LoRA and enhance its responses with retrieval-augmented generation (RAG) to align with the instructor's style and course materials.
 
-### Next Steps:
+### Highlights
+- Scalable AI-driven pipeline to generate fine-tuning data, verified by domain experts
+- A workflow in which a fine-tuned expert model, **LLaMA-TOMMI-1.0**, feeds into a RAG-based synthesis model, enabling adaptable updates and course-style responses with references
+- Web prototype linking AI responses to relevant materials and video timestamps
+- Fully open-source stack enabling local deployment and minimizing data privacy risks
 
-1. **Fine-Tuning a Foundational Model on FEM Literature**
-    - **Data Collection**: Collect and preprocess a substantial dataset from finite element method (FEM) literature, including research papers, textbooks, and course materials.
-    - **Fine-Tuning**: Fine-tune an open-source pre-trained model on the collected FEM-specific dataset to specialize it for FEM-related tasks.
+### Resources
+- ArXiv preprint: *[link coming soon]*
+- Interactive prototype: [https://my-ai-university.com](https://my-ai-university.com)
+- HuggingFace: [https://huggingface.co/my-ai-university](https://huggingface.co/my-ai-university)
+- Weights & Biases (wandb): *[link coming soon]*
 
-2. **Utilizing Retrieval-Augmented Generation (RAG) for Contextual Information**
-    - **Course Material Integration**: Index FEM course materials (available on [YouTube](https://youtube.com/playlist?list=PLJhG_d-Sp_JHKVRhfTgDqbic_4MHpltXZ)) and integrate them into the RAG system to provide context and references for the model.
-    - **Contextual Query Handling**: Develop and test the model's ability to retrieve relevant information from the indexed course materials to enhance its responses.
-    - **Developing an AI TA App for FEM Course**: Create an AI teaching assistant application specifically for the FEM course to assist students with questions and provide relevant references.
+### Main Data Sources
+- [Introduction to Finite Element Methods (FEM) by Prof. Krishna Garikipati](https://www.youtube.com/playlist?list=PLJhG_d-Sp_JHKVRhfTgDqbic_4MHpltXZ)
+- [The Finite Element Method: Linear Static and Dynamic Finite Element Analysis by Thomas J. R. Hughes](https://www.google.com/books/edition/_/cHH2n_qBK0IC?hl=en)
 
-3. **Expanding Beyond FEM**
-    - **Broader Domain Coverage**: Expand the scope of the model to cover other areas of computational physics.
-    - **Domain-Specific Fine-Tuning**: Fine-tune the model on datasets specific to these new domains, ensuring it gains expertise across a wide range of computational physics topics.
-
-4. **Incorporating New Data Types**
-    - **Image Data**: Collect and preprocess relevant images related to computational physics phenomena, such as visualizations of simulation results, graphs, and diagrams.
-    - **Simulation Data**: Integrate simulation data from various computational physics models, including chemo-mechanics and electro-chemo-mechanics.
-    - **Mathematics and Equations**: Enhance the model’s ability to understand and manipulate mathematical equations and perform mathematical operations relevant to various domains of computational physics.
-
-### Main Libraries and Tools
-- PyTorch: ML library with GPU support
-- Hugging Face Transformers: Offers pre-trained models for NLP tasks
-- Hugging Face Adapters: Facilitates efficient fine-tuning of pre-trained models
-- Hugging Face Accelerate: Simplifies distributed training and inference on multiple GPUs and TPUs
-- Datasets: Provides easy access and processing for a wide range of datasets
-
-To set up your environment:
-```bash
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu117
-pip install pandas transformers adapters accelerate datasets
+### Citation *[will be updated]*
+```bibtex
+@misc{aiu2025fem,
+  title={AI-University: An LLM-based platform for instructional alignment to scientific classrooms},
+  author={Mostafa Faghih Shojaei and Rahul Gulati and Benjamin A. Jasperson and Shangshang Wang and Simone Cimolato and Dangli Cao and Willie Neiswanger and Krishna Garikipati},
+  year={2025},
+  archivePrefix={arXiv},
+  eprint={2404.xxxxx},
+  primaryClass={cs.CL}
+}
 ```
 
 
