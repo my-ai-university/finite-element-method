@@ -4,7 +4,7 @@ This repo includes scripts, notebooks, configurations, and raw data to generate 
 
 ### Overview
 <img src="ai-u-framework.png" width="700">
-We fine-tune a large language model (LLM) using LoRA and enhance its responses with retrieval-augmented generation (RAG) to align with the instructor's style and course materials.
+We fine-tune a large language model (LLM) using LoRA to create an expert model that responds in the instructor's style. User queries are first answered by this expert model. The expert's response and original user query are then passed to a synthesis model, which retrieves relevant context from course materials using RAG and integrates this context with the expert’s response via an LLM guided by a system prompt, generating an enhanced answer.
 
 ### Highlights
 - Scalable AI-driven pipeline to generate fine-tuning data, verified by domain experts
