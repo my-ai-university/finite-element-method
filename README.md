@@ -3,7 +3,7 @@ This repository is part of the [AI University (AI-U)](https://my-ai-university.c
 This repo includes scripts, notebooks, configurations, and raw data to generate training data, fine-tune models, and evaluate the workflow.
 
 ### Overview
-<img src="ai-u-framework.png" width="600">
+<img src="ai-u-framework.png" width="700">
 We fine-tune a large language model (LLM) using LoRA and enhance its responses with retrieval-augmented generation (RAG) to align with the instructor's style and course materials.
 
 ### Highlights
@@ -14,7 +14,7 @@ We fine-tune a large language model (LLM) using LoRA and enhance its responses w
 
 ### Resources
 - ArXiv preprint: *[link coming soon]*
-- Interactive prototype: [https://my-ai-university.com](https://huggingface.co/spaces/my-ai-university/finite-element-method)
+- Interactive prototype: [https://huggingface.co/spaces/my-ai-university/finite-element-method](https://huggingface.co/spaces/my-ai-university/finite-element-method)
 - HuggingFace: [https://huggingface.co/my-ai-university](https://huggingface.co/my-ai-university)
 - Weights & Biases (wandb): *[link coming soon]*
 
