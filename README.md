@@ -1,6 +1,5 @@
 # AI-University: Finite Element Method
-This repository is part of the [AI University (AI-U)](https://my-ai-university.com) initiative. It demonstrates the AI-U framework through a case study on a graduate-level **Finite Element Method (FEM)** course.  \
-This repo includes scripts, notebooks, configurations, and raw data to generate training data, fine-tune models, and evaluate the workflow.
+This repository, part of the [AI University (AI-U)](https://my-ai-university.com) initiative, demonstrates the AI-U framework via a graduate-level Finite Element Method (FEM) case study, providing scripts, notebooks, configurations, and raw data for data generation, model fine-tuning, and workflow evaluation.
 
 ### Overview
 <img src="ai-u-framework.png" width="700">
