@@ -15,7 +15,7 @@ We fine-tune a large language model (LLM) using LoRA to create an expert model t
 - ArXiv preprint: *[link coming soon]*
 - Interactive prototype: [https://huggingface.co/spaces/my-ai-university/finite-element-method](https://huggingface.co/spaces/my-ai-university/finite-element-method)
 - HuggingFace: [https://huggingface.co/my-ai-university](https://huggingface.co/my-ai-university)
-- Weights & Biases (wandb): *[link coming soon]*
+- Weights & Biases (wandb): [https://wandb.ai/my-ai-university/finite-element-method](https://wandb.ai/my-ai-university/finite-element-method)
 
 ### Main Data Sources
 - [Introduction to Finite Element Methods (FEM) by Prof. Krishna Garikipati](https://www.youtube.com/playlist?list=PLJhG_d-Sp_JHKVRhfTgDqbic_4MHpltXZ)
