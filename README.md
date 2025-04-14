@@ -1,4 +1,4 @@
-# AI-University: Finite Element Method
+# AI University: Finite Element Method
 This repository, part of the [AI University (AI-U)](https://my-ai-university.com) initiative, demonstrates the AI-U framework via a graduate-level Finite Element Method (FEM) case study, providing scripts, notebooks, configurations, and raw data for data generation, model fine-tuning, and workflow evaluation.
 
 ### Overview
@@ -24,7 +24,7 @@ We fine-tune a large language model (LLM) using LoRA to create an expert model t
 ### Citation *[will be updated]*
 ```bibtex
 @misc{aiu2025fem,
-  title={AI-University: An LLM-based platform for instructional alignment to scientific classrooms},
+  title={AI University: An LLM-based platform for instructional alignment to scientific classrooms},
   author={Mostafa Faghih Shojaei and Rahul Gulati and Benjamin A. Jasperson and Shangshang Wang and Simone Cimolato and Dangli Cao and Willie Neiswanger and Krishna Garikipati},
   year={2025},
   archivePrefix={arXiv},
