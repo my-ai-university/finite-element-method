@@ -12,7 +12,7 @@ We fine-tune a large language model (LLM) using LoRA to create an expert model t
 - Fully open-source stack enabling local deployment and minimizing data privacy risks
 
 ### Resources
-- ArXiv preprint: *[link coming soon]*
+- ArXiv preprint: [https://arxiv.org/abs/2504.08846](https://arxiv.org/abs/2504.08846)
 - Interactive prototype: [https://huggingface.co/spaces/my-ai-university/finite-element-method](https://huggingface.co/spaces/my-ai-university/finite-element-method)
 - HuggingFace: [https://huggingface.co/my-ai-university](https://huggingface.co/my-ai-university)
 - Weights & Biases (wandb): [https://wandb.ai/my-ai-university/finite-element-method](https://wandb.ai/my-ai-university/finite-element-method)
@@ -21,15 +21,15 @@ We fine-tune a large language model (LLM) using LoRA to create an expert model t
 - [Introduction to Finite Element Methods (FEM) by Prof. Krishna Garikipati](https://www.youtube.com/playlist?list=PLJhG_d-Sp_JHKVRhfTgDqbic_4MHpltXZ)
 - [The Finite Element Method: Linear Static and Dynamic Finite Element Analysis by Thomas J. R. Hughes](https://www.google.com/books/edition/_/cHH2n_qBK0IC?hl=en)
 
-### Citation *[will be updated]*
+### Citation
 ```bibtex
 @misc{aiu2025fem,
   title={AI University: An LLM-based platform for instructional alignment to scientific classrooms},
   author={Mostafa Faghih Shojaei and Rahul Gulati and Benjamin A. Jasperson and Shangshang Wang and Simone Cimolato and Dangli Cao and Willie Neiswanger and Krishna Garikipati},
   year={2025},
   archivePrefix={arXiv},
-  eprint={2404.xxxxx},
-  primaryClass={cs.CL}
+  eprint={2504.08846},
+  primaryClass={cs.CY}
 }
 ```
 
